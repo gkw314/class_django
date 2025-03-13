@@ -1,0 +1,59 @@
+
+{% extends 'base.html' %}
+{% block content %}
+    <h1>블로그 목록</h1>
+    {# 생성 버튼 #}
+    <p style="text-align: right">
+    <a href="{% url 'blog:create' %}">생성</a>
+    </p>
+
+    {% for blog in object_list %}
+        <p>
+            <a href="{% url 'blog:detail' blog.pk %}">
+                [{{ blog.get_category_display }}]{{ blog.title }} - <small>{{ blog.created_at | date:"Y-m-d"}}</small>
+            </a>
+        </p>
+    {%  endfor %}
+
+    {# 검색버튼 추가 #}
+    <form method="get" style="margin-bottom: 10px;">
+        <input name="q" type="text" placeholder="검색어를 입력하세요." value="{% if request.GET.q %}{{ request.GET.q }}{% endif %}"> {# 검색어 보여주기 #}
+        <button>검색</button>
+    </form>
+
+    <div>
+        {#    page_obj.number = 현재페이지#}
+        {#    page_obj.paginator.num_pages = 최대페이지#}
+
+        {# 이전 페이지가 있는 경우, 첫 번째 페이지와 이전 페이지로 이동할 수 있는 링크를 보여줍니다. #}
+        {% if page_obj.has_previous %}
+             <a href="?page=1{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">&laquo 첫번째</a>
+            <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">이전</a>
+        {% endif %}
+
+        {# 현재 페이지 번호 근처의 페이지 번호 링크를 출력합니다. #}
+        {% if page_obj.number|add:2 > 1 %}
+            <a href="?page={{ page_obj.number|add:-3 }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">&hellip;</a>
+        {% endif %}
+
+        {# 각 페이지 번호에 대한 링크를 출력합니다. 현재 페이지는 (현재페이지)로 표시됩니다. #}
+        {% for i in page_obj.paginator.page_range %}
+            {% if page_obj.number == i %}
+                <span>(현재페이지)</span>
+            {% elif i > page_obj.number|add:-3 and i < page_obj.number|add:3 %}
+                <a href="?page={{ i }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">{{ i }}</a>
+            {% endif %}
+        {% endfor %}
+
+        {# 마지막 페이지로 이동하는 링크와 현재 페이지 기준으로 앞뒤의 ... 표시를 추가합니다. #}
+        {% if page_obj.paginator.num_pages > page_obj.number|add:2 %}
+            <a href="?page={{ page_obj.number|add:3 }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">&hellip;</a>
+        {% endif %}
+
+        {# 다음 페이지가 있는 경우, 다음 페이지와 마지막 페이지로 이동할 수 있는 링크를 보여줍니다. #}
+        {% if page_obj.has_next %}
+                <a href="?page={{ page.object.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">다음</a>
+                <a href="?page={{ page.object.paginator.num_pages }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">마지막 &raquo</a>
+        {% endif %}
+    </div>
+{% endblock %}
