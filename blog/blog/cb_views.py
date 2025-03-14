@@ -1,10 +1,12 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
 from django.http import HttpResponseRedirect, Http404
+from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
-
-from blog.models import Blog
+from django.urls import reverse
+from blog.forms import CommentForm
+from blog.models import Blog, Comment
 
 
 class BlogListView(ListView): # ListView 상속
@@ -29,9 +31,19 @@ class BlogListView(ListView): # ListView 상속
         return queryset
 
 
-class BlogDetailView(DetailView):
-    model = Blog
+class BlogDetailView(ListView):
+    model = Comment
+    # 같이 조인 하는 방법, 디비요청 덜간다.
+    # queryset = Blog.objects.all().prefetch_related('comment_set', 'comment_set__author')
     template_name = 'blog_detail.html'
+    paginate_by = 10  # 페이지네이션
+
+    def get(self, request, *args, **kwargs):
+        self.object = get_object_or_404(Blog, pk=kwargs.get('blog_pk'))
+        return super().get(request, *args, **kwargs)
+
+    def get_queryset(self):
+        return self.model.objects.filter(blog=self.object).prefetch_related('author')
 
 #     """
 #         1. 이 속성은 URL에서 데이터를 찾을때 사용할 키 이름을 바꿔주는 것
@@ -76,11 +88,34 @@ class BlogDetailView(DetailView):
 # context['test'] = 'CBV'                              # 추가로 test라는 이름으로 'CBV' 넣기
 # """
 #
-#
-# def get_context_data(self, **kwargs):
-#     context = super().get_context_data(**kwargs)
-#     context['test'] = 'CBV'
-#     return context
+# # 템플릿에 전달할 context 데이터
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['comment_form'] = CommentForm()
+        context['blog'] = self.object
+        return context
+
+    # 댓글기능 추가 방법 1
+    def post(self, *args, **kwargs):
+        comment_form = CommentForm(self.request.POST)
+
+         # 유효성 검사 실패 시
+        if not comment_form.is_valid():
+            self.object = self.get_object()
+            context = self.get_context_data(object=self.object)
+            context['comment_form'] = comment_form
+            return self.render_to_response(context)
+
+        # 로그인 여부 확인
+        if not self.request.user.is_authenticated:
+            raise Http404
+
+        comment = comment_form.save(commit=False)  # 댓글 객체를 데이터베이스에 저장하지 않고 반환
+        comment.blog_id = self.kwargs['pk']  # 현재 블로그 게시글(pk)과 댓글을 연결
+        comment.author = self.request.user  # 현재 로그인한 사용자를 댓글 작성자로 설정
+        comment.save()  # 댓글을 데이터베이스에 저장
+
+        return HttpResponseRedirect(reverse_lazy('blog:detail', kwargs={'pk': self.kwargs['pk']}))
 
 '''
 LoginRequiredMixin : 사용자가 로그인을 해야만 이 뷰에 접근할 수 있도록 합니다. 만약 로그인을 하지 않은 사용자가 접근하려고 하면, 로그인 페이지로 리디렉션됩니다.
@@ -89,7 +124,7 @@ CreateView : Django에서 제공하는 제네릭 뷰로, 새로운 객체를 생
 
 class BlogCreateView(LoginRequiredMixin, CreateView):
     model = Blog
-    template_name = 'blog_create.html'
+    template_name = 'blog_form.html'
     fields = ('category', 'title', 'content')
     # success_url = reverse_lazy('cb_blog_list')
 
@@ -99,13 +134,19 @@ class BlogCreateView(LoginRequiredMixin, CreateView):
         self.object.save()
         return HttpResponseRedirect(self.get_success_url())
 
-    def get_success_url(self): # 새로 생성된 블로그 게시물의 상세 페이지로 리디렉션
-        return reverse_lazy('blog:detail', kwargs={'pk': self.object.pk})
+    # def get_success_url(self): # 새로 생성된 블로그 게시물의 상세 페이지로 리디렉션
+    #     return reverse_lazy('blog:detail', kwargs={'pk': self.object.pk})
 
+    # 추가
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['sub_title'] = '작성'
+        context['btn_name'] = '생성'
+        return context
 
 class BlogUpdateView(LoginRequiredMixin, UpdateView):
     model = Blog
-    template_name = 'blog_update.html'
+    template_name = 'blog_form.html'
     fields = ('category', 'title', 'content')
 
         # 전체 쿼리셋을 필터링하여 다수의 객체를 반환합니다.
@@ -123,6 +164,13 @@ class BlogUpdateView(LoginRequiredMixin, UpdateView):
     #         raise Http404
     #     return self.object
 
+     # 추가
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['sub_title'] = '수정'
+        context['btn_name'] = '수정'
+        return context
+
 
 class BlogDeleteView(LoginRequiredMixin, DeleteView):
     model = Blog
@@ -135,3 +183,26 @@ class BlogDeleteView(LoginRequiredMixin, DeleteView):
 
     def get_success_url(self):
         return reverse_lazy('blog:list')
+
+
+# 댓글기능 추가 방법 2
+# url도 추가해야함
+class CommentCreateView(LoginRequiredMixin, CreateView):
+    model = Comment
+    form_class = CommentForm
+
+    def get(self, *args, **kwargs):
+        raise Http404
+
+    def form_valid(self, form):
+        blog = self.get_blog()
+        self.object = form.save(commit=False)
+        self.object.author = self.request.user
+        self.object.blog = blog
+        self.object.save()
+        return HttpResponseRedirect(reverse('blog:detail', kwargs={'blog_pk': blog.pk})) # kwargs를 blog.pk로 변경
+
+    def get_blog(self):
+        pk = self.kwargs['blog_pk']
+        blog = get_object_or_404(Blog, pk=pk) # Blog가 없으면 404에러
+        return blog

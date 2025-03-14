@@ -127,6 +127,17 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_DIR = BASE_DIR / 'static'
+
+# 정적 파일들을 모아 관리하기 위해 만든 리스트
+STATICFILES_DIRS = [
+    STATIC_DIR
+]
+
+# 배포 시 한 번에 배포하기 위함
+STATIC_ROOT = BASE_DIR / '.static_root'
+
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
