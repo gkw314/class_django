@@ -83,7 +83,7 @@ def blog_create(request):
         return redirect(reverse('fb:detail', kwargs={'pk': blog.pk}))
 
     context = {'form': form}
-    return render(request, 'blog_create.html', context)
+    return render(request, 'blog_form.html', context)
 
 @login_required()
 def blog_update(request, pk):
@@ -98,7 +98,7 @@ def blog_update(request, pk):
         'blog': blog,
         'form' : form,
     }
-    return render(request, 'blog_update.html', context)
+    return render(request, 'blog_form.html', context)
 
 @login_required()
 # 특정 요청만 허락하는 데코레이터. 삭제나 수정은 POST 요청으로 받아야합니다.
