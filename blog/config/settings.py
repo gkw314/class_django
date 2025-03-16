@@ -46,6 +46,7 @@ OWN_APPS = [
 
 THIRD_APPS = [
     'django_extensions',
+    'django_summernote',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + OWN_APPS + THIRD_APPS
@@ -137,6 +138,9 @@ STATICFILES_DIRS = [
 # 배포 시 한 번에 배포하기 위함
 STATIC_ROOT = BASE_DIR / '.static_root'
 
+# 미디어 경로 추가
+MEDIA_URL = 'media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 
 # Default primary key field type
