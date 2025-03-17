@@ -8,15 +8,26 @@
     </div>
 
     <hr>
-
-    {% for blog in object_list %}
+      {% for blog in object_list %}
         <div class="my-1">
-            <a href="{% url 'blog:detail' blog.pk %}" class="link-primary link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover">
-                [{{ blog.get_category_display }}] {{ blog.title }} - <small>{{ blog.created_at | date:"Y-m-d" }}</small>
-            </a>
+        {# 수정 #}
+{#          <a href="{% url 'blog:detail' blog.pk %}" class="link-primary link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover row">#}
+{#            {% if blog.thumbnail %}#}
+{#                <img src="{{ blog.thumbnail.url }}" alt="" class="col-2">#}
+{#            {% elif blog.image %}#}
+{#                <img src="{{ blog.image.url }}" alt="" class="col-2">#}
+{#            {% endif %}#}
+            {# 수정 모델을 이용해 썸네일 주소 가져오는 방법 #}
+            <a href="{% url 'blog:detail' blog.pk %}" class="link-primary link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover row">
+            {% if blog.image %}
+                <img src="{{ blog.image.url }}" alt="" class="col-2">
+            {% endif %}
+            <span class="col-10">
+              [{{ blog.get_category_display }}] {{ blog.title }} - <small>{{ blog.created_at | date:"Y-m-d" }}</small>
+            </span>
+          </a>
         </div>
-    {%  endfor %}
-
+      {% endfor %}
     {# 검색버튼 추가 #}
     <form method="get" class="my-3 d-flex">
         <input class="form-control-sm" name="q" type="text" placeholder="검색어를 입력하세요." value="{% if request.GET.q %}{{ request.GET.q }}{% endif %}">

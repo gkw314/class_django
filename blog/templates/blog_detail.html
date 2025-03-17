@@ -19,9 +19,11 @@
     {{ blog.author.username }}
   </div>
   <hr>
-  <p>{{ blog.content | safe}}</p>
+    {% if blog.image %}
+        <img src="{{ blog.image.url }}" alt="" class="w-100"> {# 추가 #}
+    {% endif %}
+  <p>{{ blog.content | safe }}</p>
 
-       {# 추가 #}
   <hr>
   {% if request.user.is_authenticated %}
     <form method="post" action="{% url 'blog:comment_create' blog.pk %}">
