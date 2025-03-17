@@ -85,11 +85,15 @@ def blog_create(request):
     context = {'form': form}
     return render(request, 'blog_form.html', context)
 
+
 @login_required()
 def blog_update(request, pk):
-    blog = get_object_or_404(Blog, pk=pk, author=request.user)
+    if not request.user.is_superuser:
+        blog = get_object_or_404(Blog, pk=pk)
+    else:
+        blog = get_object_or_404(Blog, pk=pk, author=request.user)
 
-    form = BlogForm(request.POST or None, instance=blog)  # instance로 기초데이터 세팅
+    form = BlogForm(request.POST or None,request.FILES or None, instance=blog)  # instance로 기초데이터 세팅
     if form.is_valid():
         blog = form.save()
         return redirect(reverse('fb:detail', kwargs={'pk': blog.pk}))

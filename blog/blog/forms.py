@@ -1,12 +1,17 @@
 
 from django import forms
+from django_summernote.widgets import SummernoteWidget
+
 from blog.models import Blog, Comment
 
 
 class BlogForm(forms.ModelForm): # Model을 가지고 만들어서 ModelForm 상속
     class Meta:
         model = Blog
-        fields = ('title', 'content', ) # 전체를 적용하려면 '__all__'
+        fields = ('category', 'title', 'image', 'content') # 전체를 적용하려면 '__all__'
+        widgets = {
+            'content': SummernoteWidget()
+        }
 
 class CommentForm(forms.ModelForm):
     class Meta:

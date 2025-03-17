@@ -5,7 +5,7 @@ from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.urls import reverse
-from blog.forms import CommentForm
+from blog.forms import CommentForm, BlogForm
 from blog.models import Blog, Comment
 
 
@@ -125,7 +125,7 @@ CreateView : Django에서 제공하는 제네릭 뷰로, 새로운 객체를 생
 class BlogCreateView(LoginRequiredMixin, CreateView):
     model = Blog
     template_name = 'blog_form.html'
-    fields = ('category', 'title', 'content')
+    form_class = BlogForm # 수정
     # success_url = reverse_lazy('cb_blog_list')
 
     def form_valid(self, form): # 폼이 유효할 때 호출
@@ -147,7 +147,8 @@ class BlogCreateView(LoginRequiredMixin, CreateView):
 class BlogUpdateView(LoginRequiredMixin, UpdateView):
     model = Blog
     template_name = 'blog_form.html'
-    fields = ('category', 'title', 'content')
+    # fields = ('category', 'title', 'content')
+    form_class = BlogForm  # 수정 = fields = ('category', 'title', 'content')
 
         # 전체 쿼리셋을 필터링하여 다수의 객체를 반환합니다.
     def get_queryset(self):
@@ -163,6 +164,11 @@ class BlogUpdateView(LoginRequiredMixin, UpdateView):
     #     if self.object.author != self.request.user:
     #         raise Http404
     #     return self.object
+
+    # 추가
+    def form_valid(self, form):
+        print(form.cleaned_data)
+        return super().form_valid(form)
 
      # 추가
     def get_context_data(self, **kwargs):
@@ -180,6 +186,10 @@ class BlogDeleteView(LoginRequiredMixin, DeleteView):
         if not self.request.user.is_superuser: # admin추가
             queryset = queryset.filter(author=self.request.user)
         return queryset
+
+    def form_valid(self, form):
+        print(form.cleaned_data)
+        return super().form_valid(form)
 
     def get_success_url(self):
         return reverse_lazy('blog:list')
